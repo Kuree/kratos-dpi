@@ -1,0 +1,6 @@
+[submodule "kratos-dpi/pybind11"]
+	path = kratos_dpi/pybind11
+	url = https://github.com/pybind/pybind11
+[submodule "kratos_dpi/pybind11"]
+	path = kratos_dpi/pybind11
+	url = https://github.com/pybind/pybind11
