@@ -2,6 +2,8 @@ from kratos_dpi import dpi_python, dpi_compile
 
 
 def test_a(a, b):
+    print(a)
+    print(b)
     return a + b
 
 

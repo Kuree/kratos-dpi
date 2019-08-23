@@ -17,6 +17,7 @@ def compile_src(target_name, funcs, dirname):
         f.write('\npy::scoped_interpreter guard;\n')
 
         f.write("\n")
+        f.write('extern "C" {\n')
         # generate each function
         for func_name, func_src in funcs.items():
             # get arg names
@@ -25,7 +26,8 @@ def compile_src(target_name, funcs, dirname):
             # int args
             # TODO: read out from the calling definition
             int_args = ["int " + arg for arg in args]
-            f.write("int " + func_name + "(" + ", ".join(int_args) + ") {\n")
+            f.write('__attribute__((visibility("default"))) int ' + func_name + "(" + ", ".join(
+                int_args) + ') {\n')
             # prepare the local variable
             f.write("  auto locals = py::dict();\n")
             dict_value = []
@@ -41,11 +43,14 @@ def compile_src(target_name, funcs, dirname):
 
             f.write('  return locals["__result"].cast<int>();\n}')
 
+        f.write("}\n")
+
     # copy pybind and cmake files over
     pybind_dir = os.path.join(os.path.dirname(__file__), "pybind11")
     cmake_file = os.path.join(os.path.dirname(__file__), "CMakeLists.txt")
-    if not os.path.isdir(pybind_dir):
-        shutil.copytree(pybind_dir, os.path.join(dirname, "pybind11"))
+    pybind_dst_dir = os.path.join(dirname, "pybind11")
+    if not os.path.isdir(pybind_dst_dir):
+        shutil.copytree(pybind_dir, pybind_dst_dir)
     shutil.copyfile(cmake_file, os.path.join(dirname, "CMakeLists.txt"))
 
     # run cmake command
