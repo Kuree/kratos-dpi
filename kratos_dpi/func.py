@@ -41,7 +41,10 @@ class DPIFunctionCall:
                         name = args_order[idx]
                         w, signed = arg_types[idx]
                         func.input(name, w, signed)
-                    func.set_port_ordering(args_order)
+                    order_dict = {}
+                    for idx, value in enumerate(args_order):
+                        order_dict[idx] = value
+                    func.set_port_ordering(order_dict)
                     cache[fn_name] = args_order, gen, arg_types
                 else:
                     args_order, gen, arg_types = cache[fn_name]
@@ -56,3 +59,8 @@ class DPIFunctionCall:
 
 
 dpi_python = DPIFunctionCall
+
+
+def clear_context():
+    DPIFunctionCall.cache_ordering.clear()
+    DPIFunctionCall.fn_calls.clear()

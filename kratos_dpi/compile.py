@@ -3,6 +3,17 @@ import shutil
 import subprocess
 from .pyast import extract_arg_name_order_from_fn, getsource
 from .func import DPIFunctionCall
+import astor
+import ast
+import textwrap
+
+
+def __process_func_src(fn_src):
+    func_tree = ast.parse(textwrap.dedent(fn_src))
+    fn_body = func_tree.body[0]
+    # remove the decorator
+    fn_body.decorator_list = []
+    return astor.to_source(fn_body)
 
 
 def get_arg_type(arg, arg_types):
@@ -52,6 +63,8 @@ def compile_src(target_name, funcs, dirname):
             for arg in args:
                 f.write('  locals["__' + arg + '"] = ' + arg + ";\n")
 
+            # using astor to regenerate the code to fix the indentations
+            func_src = __process_func_src(func_src)
             # append the result line
             call_args = ["__" + arg for arg in args]
             func_src += "__result = " + func_name + "(" + ", ".join(
@@ -59,7 +72,7 @@ def compile_src(target_name, funcs, dirname):
             f.write(
                 '  py::exec(R"(\n' + func_src + '  )", py::globals(), locals);')
 
-            f.write('  return locals["__result"].cast<int>();\n}')
+            f.write('  return locals["__result"].cast<int>();\n}\n')
 
         f.write("}\n")
 
