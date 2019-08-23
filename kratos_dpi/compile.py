@@ -5,6 +5,24 @@ from .pyast import extract_arg_name_order_from_fn, getsource
 from .func import DPIFunctionCall
 
 
+def get_arg_type(arg, arg_types):
+    if arg not in arg_types:
+        # default 32-bit signed
+        return "int "
+    else:
+        w, signed = arg_types[arg]
+        if w <= 8:
+            t = "char"
+        elif w <= 16:
+            t = "short int"
+        elif w <= 32:
+            t = "int"
+        else:
+            t = "long int"
+        s = "" if not signed else "unsigned "
+        return s + t + " "
+
+
 def compile_src(target_name, funcs, dirname):
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
@@ -19,15 +37,15 @@ def compile_src(target_name, funcs, dirname):
         f.write("\n")
         f.write('extern "C" {\n')
         # generate each function
-        for func_name, func_src in funcs.items():
+        for func_name, (func_src, arg_types) in funcs.items():
             # get arg names
             args = extract_arg_name_order_from_fn(func_src)
             # print out the function
             # int args
             # TODO: read out from the calling definition
-            int_args = ["int " + arg for arg in args]
-            f.write('__attribute__((visibility("default"))) int ' + func_name + "(" + ", ".join(
-                int_args) + ') {\n')
+            int_args = [get_arg_type(arg, arg_types) + arg for arg in args]
+            f.write('__attribute__((visibility("default"))) int ')
+            f.write(func_name + "(" + ", ".join(int_args) + ') {\n')
             # prepare the local variable
             f.write("  auto locals = py::dict();\n")
             dict_value = []
@@ -72,7 +90,12 @@ def compile_src(target_name, funcs, dirname):
 
 def dpi_compile(target_name, output_dir):
     funcs = DPIFunctionCall.fn_calls
+    cache = DPIFunctionCall.cache_ordering
     fn_srcs = {}
     for name, fn in funcs.items():
-        fn_srcs[name] = getsource(fn)
+        if name in cache:
+            _type = cache[name][-1]
+        else:
+            _type = {}
+        fn_srcs[name] = getsource(fn), _type
     return compile_src(target_name, fn_srcs, output_dir)
